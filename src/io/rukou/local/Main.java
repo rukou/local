@@ -1,18 +1,20 @@
 package io.rukou.local;
 
-import io.rukou.edge.objects.HttpRequestMessage;
-import io.rukou.edge.objects.HttpResponseMessage;
-import io.rukou.edge.objects.Message;
+import io.rukou.local.endpoints.Echo;
+import io.rukou.local.endpoints.Http;
 
 import java.util.Map;
 
 public class Main {
-  public static void main(String[] args){
+  public static void main(String[] args) throws InterruptedException {
     Map<String, String> env = System.getenv();
 
     //source config
     String sourceType = env.get("SOURCE_TYPE");
-    String sourceFormat = env.get("SOURCE_FORMAT");
+    if(sourceType == null){
+      System.err.println("missing source definition");
+      System.exit(1);
+    }
     Source s=null;
     switch (sourceType){
       case "aws-sqs":
@@ -27,28 +29,29 @@ public class Main {
 
     //target config
     String targetType = env.get("TARGET_TYPE");
-    String targetFormat = env.get("TARGET_FORMAT");
     Target t=null;
     switch (targetType){
-      case "aws-sqs":
-        SQSTarget x=new SQSTarget();
-        x.accessKey=env.get("TARGET_ACCESSKEY");
-        x.secretKey=env.get("TARGET_SECRETKEY");
-        x.setRequestQueueUrl(env.get("TARGET_REQUESTQUEUEURL"));
-        x.setResponseQueueUrl(env.get("TARGET_RESPONSEQUEUEURL"));
-        t=x;
-        break;
       case "http":
-        t = new HTTPTarget();
+        t = new Http();
+        break;
+      case "echo":
+        t = new Echo();
         break;
     }
 
-    System.out.println("rukou local is running.");
+    System.out.println("Rùkǒu local is running.");
     while(true){
       Message msg = s.pollSource();
-      HttpRequestMessage reqMsg=null;
-      HttpResponseMessage respMsg = t.invoke(reqMsg);
-      s.pushReply(respMsg);
+      if(msg == null){
+        Thread.sleep(1000);
+
+      }else {
+        String endpointType = msg.getEndpointType();
+
+        System.out.println(msg.toString());
+        Message respMsg = t.invoke(msg);
+        s.pushReply(respMsg);
+      }
     }
   }
 }
