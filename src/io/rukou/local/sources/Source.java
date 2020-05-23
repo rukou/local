@@ -1,4 +1,6 @@
-package io.rukou.local;
+package io.rukou.local.sources;
+
+import io.rukou.local.Message;
 
 public abstract class Source {
   public abstract Message pollSource();

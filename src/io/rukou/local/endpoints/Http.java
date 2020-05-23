@@ -1,9 +1,8 @@
 package io.rukou.local.endpoints;
 
 import io.rukou.local.Message;
-import io.rukou.local.Target;
 
-public class Http extends Target {
+public class Http extends Endpoint {
 
   @Override
   public Message invoke(Message msg) {

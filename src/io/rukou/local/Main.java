@@ -1,7 +1,7 @@
 package io.rukou.local;
 
-import io.rukou.local.endpoints.Echo;
-import io.rukou.local.endpoints.Http;
+import io.rukou.local.sources.Pubsub;
+import io.rukou.local.sources.Source;
 
 import java.util.Map;
 
@@ -11,47 +11,25 @@ public class Main {
 
     //source config
     String sourceType = env.get("SOURCE_TYPE");
-    if(sourceType == null){
+    if (sourceType == null) {
       System.err.println("missing source definition");
       System.exit(1);
     }
-    Source s=null;
-    switch (sourceType){
-      case "aws-sqs":
-        SQSSource x=new SQSSource();
-        x.accessKey=env.get("SOURCE_ACCESSKEY");
-        x.secretKey=env.get("SOURCE_SECRETKEY");
-        x.setRequestQueueUrl(env.get("SOURCE_REQUESTQUEUEURL"));
-        x.setReplyQueueUrl(env.get("SOURCE_RESPONSEQUEUEURL"));
-        s=x;
-        break;
-    }
-
-    //target config
-    String targetType = env.get("TARGET_TYPE");
-    Target t=null;
-    switch (targetType){
-      case "http":
-        t = new Http();
-        break;
-      case "echo":
-        t = new Echo();
+    Source s = null;
+    switch (sourceType) {
+      case "google-pubsub":
+        String edge2localTopic = env.get("SOURCE_EDGE2LOCALTOPIC");
+        String edge2localSubscription = env.get("SOURCE_EDGE2LOCALSUBSCRIPTION");
+        String local2edgeTopic = env.get("SOURCE_LOCAL2EDGETOPIC");
+        String serviceAccount = env.get("SOURCE_SERVICEACCOUNT");
+        Pubsub pubsub = new Pubsub(edge2localTopic, edge2localSubscription, local2edgeTopic, serviceAccount);
+        s = pubsub;
         break;
     }
 
     System.out.println("Rùkǒu local is running.");
-    while(true){
-      Message msg = s.pollSource();
-      if(msg == null){
-        Thread.sleep(1000);
-
-      }else {
-        String endpointType = msg.getEndpointType();
-
-        System.out.println(msg.toString());
-        Message respMsg = t.invoke(msg);
-        s.pushReply(respMsg);
-      }
+    if(s instanceof Pubsub){
+      ((Pubsub)s).startAsync();
     }
   }
 }
