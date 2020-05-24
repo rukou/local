@@ -10,6 +10,7 @@ import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import io.rukou.local.Message;
 import io.rukou.local.endpoints.Echo;
+import io.rukou.local.endpoints.Http;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -70,6 +71,10 @@ public class Pubsub extends Source {
               Echo echoEndpoint = new Echo();
               result = echoEndpoint.invoke(msg);
               break;
+            case "http":
+              Http httpEndpoint = new Http();
+              result = httpEndpoint.invoke(msg);
+              break;
             default:
               System.err.println("endpoint cannot be determined, falling back to 'echo'");
               Echo defaultEndpoint = new Echo();
@@ -93,7 +98,7 @@ public class Pubsub extends Source {
           );
           publisher.publish(pubsubMessage);
 
-          System.out.println("replied " + requestId + " to " + local2edgeDestination);
+          System.out.println("replied " + requestId + " replying to " + local2edgeDestination);
 
           consumer.ack();
         };
