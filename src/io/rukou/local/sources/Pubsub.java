@@ -8,9 +8,12 @@ import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
+import io.rukou.local.EnvClassLoader;
 import io.rukou.local.Message;
 import io.rukou.local.endpoints.Echo;
+import io.rukou.local.endpoints.Endpoint;
 import io.rukou.local.endpoints.Http;
+import io.rukou.local.endpoints.Jms;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -20,26 +23,18 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Pubsub extends Source {
-  String edge2localTopic;
   String edge2localSubscription;
-  String local2edgeTopic;
   String serviceAccount;
-  ServiceAccountCredentials account;
   CredentialsProvider credentialsProvider;
-  Publisher publisher;
   ConcurrentHashMap<String, Publisher> publishers = new ConcurrentHashMap<>();
 
-  public Pubsub(String edge2localTopic, String edge2localSubscription, String local2edgeTopic, String serviceAccount) {
-    this.edge2localTopic = edge2localTopic;
+  public Pubsub(String edge2localSubscription, String serviceAccount) {
     this.edge2localSubscription = edge2localSubscription;
-    this.local2edgeTopic = local2edgeTopic;
     this.serviceAccount = serviceAccount;
-
     InputStream stream = new ByteArrayInputStream(serviceAccount.getBytes(StandardCharsets.UTF_8));
     try {
-      account = ServiceAccountCredentials.fromStream(stream);
+      ServiceAccountCredentials account = ServiceAccountCredentials.fromStream(stream);
       credentialsProvider = FixedCredentialsProvider.create(account);
-      publisher = Publisher.newBuilder(local2edgeTopic).setCredentialsProvider(() -> account).build();
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -65,7 +60,7 @@ public class Pubsub extends Source {
 
           //running against endpoint
           String type = msg.getEndpointType();
-          Message result;
+          Message result=null;
           switch (type) {
             case "echo":
               Echo echoEndpoint = new Echo();
@@ -74,6 +69,10 @@ public class Pubsub extends Source {
             case "http":
               Http httpEndpoint = new Http();
               result = httpEndpoint.invoke(msg);
+              break;
+            case "jms":
+              Endpoint jmsEndpoint = new Jms();
+              result = jmsEndpoint.invoke(msg);
               break;
             default:
               System.err.println("endpoint cannot be determined, falling back to 'echo'");
@@ -90,23 +89,22 @@ public class Pubsub extends Source {
                   return Publisher.newBuilder(x).setCredentialsProvider(credentialsProvider).build();
                 } catch (IOException e) {
                   System.out.println("could not create publisher for destination " + x);
-
                   e.printStackTrace();
                   return null;
                 }
               }
           );
-          publisher.publish(pubsubMessage);
-
-          System.out.println("replied " + requestId + " replying to " + local2edgeDestination);
-
+          if(publisher!=null) {
+            publisher.publish(pubsubMessage);
+            System.out.println("replied " + requestId + " replying to " + local2edgeDestination);
+          }
           consumer.ack();
         };
 
     Subscriber subscriber = null;
     try {
       // Create a subscriber for "my-subscription-id" bound to the message receiver
-      subscriber = Subscriber.newBuilder(edge2localSubscription, receiver).setCredentialsProvider(() -> account).build();
+      subscriber = Subscriber.newBuilder(edge2localSubscription, receiver).setCredentialsProvider(credentialsProvider).build();
       subscriber.startAsync().awaitRunning();
       // Allow the subscriber to run indefinitely unless an unrecoverable error occurs
       subscriber.awaitTerminated();

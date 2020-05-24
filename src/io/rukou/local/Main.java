@@ -18,11 +18,9 @@ public class Main {
     Source s = null;
     switch (sourceType) {
       case "google-pubsub":
-        String edge2localTopic = env.get("SOURCE_EDGE2LOCALTOPIC");
         String edge2localSubscription = env.get("SOURCE_EDGE2LOCALSUBSCRIPTION");
-        String local2edgeTopic = env.get("SOURCE_LOCAL2EDGETOPIC");
         String serviceAccount = env.get("SOURCE_SERVICEACCOUNT");
-        Pubsub pubsub = new Pubsub(edge2localTopic, edge2localSubscription, local2edgeTopic, serviceAccount);
+        Pubsub pubsub = new Pubsub(edge2localSubscription, serviceAccount);
         s = pubsub;
         break;
     }
