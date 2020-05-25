@@ -1,5 +1,6 @@
 package io.rukou.local;
 
+import io.rukou.local.sources.Eventhub;
 import io.rukou.local.sources.Pubsub;
 import io.rukou.local.sources.Source;
 
@@ -23,11 +24,14 @@ public class Main {
         Pubsub pubsub = new Pubsub(edge2localSubscription, serviceAccount);
         s = pubsub;
         break;
+      case "azure-eventhub":
+        String edge2localNamespace = env.get("SOURCE_EDGE2LOCAL");
+        Eventhub eventhub = new Eventhub(edge2localNamespace);
+        s = eventhub;
+        break;
     }
 
     System.out.println("Rùkǒu local is running.");
-    if(s instanceof Pubsub){
-      ((Pubsub)s).startAsync();
-    }
+    s.startAsync();
   }
 }

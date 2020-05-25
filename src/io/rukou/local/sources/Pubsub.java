@@ -8,12 +8,7 @@ import com.google.cloud.pubsub.v1.Publisher;
 import com.google.cloud.pubsub.v1.Subscriber;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
-import io.rukou.local.EnvClassLoader;
 import io.rukou.local.Message;
-import io.rukou.local.endpoints.Echo;
-import io.rukou.local.endpoints.Endpoint;
-import io.rukou.local.endpoints.Http;
-import io.rukou.local.endpoints.Jms;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -58,28 +53,8 @@ public class Pubsub extends Source {
           String local2edgeDestination = msg.header.get("X-LOCAL2EDGE-DESTINATION");
           String requestId = msg.getRequestId();
 
-          //running against endpoint
-          String type = msg.getEndpointType();
-          Message result=null;
-          switch (type) {
-            case "echo":
-              Echo echoEndpoint = new Echo();
-              result = echoEndpoint.invoke(msg);
-              break;
-            case "http":
-              Http httpEndpoint = new Http();
-              result = httpEndpoint.invoke(msg);
-              break;
-            case "jms":
-              Endpoint jmsEndpoint = new Jms();
-              result = jmsEndpoint.invoke(msg);
-              break;
-            default:
-              System.err.println("endpoint cannot be determined, falling back to 'echo'");
-              Echo defaultEndpoint = new Echo();
-              result = defaultEndpoint.invoke(msg);
-              break;
-          }
+          Message result = this.processMessage(msg);
+
           //reply message
           PubsubMessage pubsubMessage =
               PubsubMessage.newBuilder().setData(ByteString
@@ -114,8 +89,5 @@ public class Pubsub extends Source {
         subscriber.stopAsync();
       }
     }
-  }
-
-  public void pushReply(Message msg) {
   }
 }
