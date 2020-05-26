@@ -1,6 +1,5 @@
 package io.rukou.local.endpoints;
 
-import io.rukou.local.EnvClassLoader;
 import io.rukou.local.Message;
 
 import javax.jms.Connection;
@@ -15,16 +14,15 @@ import javax.jms.TextMessage;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
+import java.util.Map;
 import java.util.Properties;
 
 public class Jms extends Endpoint {
 
   @Override
   public Message invoke(Message msg) {
-    EnvClassLoader ecl = new EnvClassLoader();
-    Thread.currentThread().setContextClassLoader(ecl);
-
     String initialContextFactory = msg.header.get("X-JMS-INITIALFACTORY");
+    String connectionFactoryName = msg.header.get("X-JMS-CONNECTIONFACTORY");
     String providerUrl = msg.header.get("X-JMS-PROVIDERURL");
     String destinationName = msg.header.get("X-JMS-DESTINATION");
     String user = msg.header.get("X-JMS-USER");
@@ -32,6 +30,8 @@ public class Jms extends Endpoint {
     Properties props = new Properties();
     props.setProperty(Context.INITIAL_CONTEXT_FACTORY, initialContextFactory);
     props.setProperty(Context.PROVIDER_URL, providerUrl);
+    props.setProperty(Context.SECURITY_PRINCIPAL, user);
+    props.setProperty(Context.SECURITY_CREDENTIALS, password);
     Connection connection = null;
 
     Message result = new Message();
@@ -40,10 +40,10 @@ public class Jms extends Endpoint {
 
     try {
       Context ctx = new InitialContext(props);
-      ConnectionFactory connectionFactory = (ConnectionFactory) ctx.lookup("ConnectionFactory");
+      ConnectionFactory connectionFactory = (ConnectionFactory) ctx.lookup(connectionFactoryName);
       Destination destination = (Destination) ctx.lookup(destinationName);
 
-      connection = connectionFactory.createConnection(user,password);
+      connection = connectionFactory.createConnection(user, password);
       Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
       MessageProducer producer = session.createProducer(destination);
       TextMessage message = session.createTextMessage();
@@ -78,6 +78,13 @@ public class Jms extends Endpoint {
     } catch (JMSException e) {
       System.out.println("Exception occurred: " + e);
       e.printStackTrace();
+    } catch (Exception e) {
+      System.out.println("Exception occurred: " + e);
+      e.printStackTrace();
+      System.out.println("failing message");
+      for(Map.Entry<String,String> entry : msg.header.entrySet()){
+        System.out.println("msg header: "+entry.getKey()+" = "+entry.getValue());
+      }
     } finally {
       if (connection != null) {
         try {

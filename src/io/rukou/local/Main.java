@@ -4,6 +4,10 @@ import io.rukou.local.sources.Eventhub;
 import io.rukou.local.sources.Pubsub;
 import io.rukou.local.sources.Source;
 
+import java.security.CodeSource;
+import java.security.PermissionCollection;
+import java.security.Policy;
+import java.security.Provider;
 import java.util.Map;
 
 public class Main {
@@ -19,13 +23,13 @@ public class Main {
     Source s = null;
     switch (sourceType) {
       case "google-pubsub":
-        String edge2localSubscription = env.get("SOURCE_EDGE2LOCALSUBSCRIPTION");
-        String serviceAccount = env.get("SOURCE_SERVICEACCOUNT");
+        String edge2localSubscription = env.get("SOURCE_PUBSUB_SUBSCRIPTION");
+        String serviceAccount = env.get("SOURCE_PUBSUB_SERVICEACCOUNT");
         Pubsub pubsub = new Pubsub(edge2localSubscription, serviceAccount);
         s = pubsub;
         break;
       case "azure-eventhub":
-        String edge2localNamespace = env.get("SOURCE_EDGE2LOCAL");
+        String edge2localNamespace = env.get("SOURCE_EVENTHUB_URL");
         Eventhub eventhub = new Eventhub(edge2localNamespace);
         s = eventhub;
         break;

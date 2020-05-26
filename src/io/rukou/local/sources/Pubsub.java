@@ -52,9 +52,15 @@ public class Pubsub extends Source {
 
           String local2edgeDestination = msg.header.get("X-LOCAL2EDGE-DESTINATION");
           String requestId = msg.getRequestId();
-
-          Message result = this.processMessage(msg);
-
+          Message result;
+          try {
+            result = this.processMessage(msg);
+          } catch (Exception ex) {
+            ex.printStackTrace();
+            result = new Message();
+            result.header.put("X-REQUEST-ID", msg.getRequestId());
+            result.header.put("X-HTTP-STATUSCODE", "500");
+          }
           //reply message
           PubsubMessage pubsubMessage =
               PubsubMessage.newBuilder().setData(ByteString
@@ -69,7 +75,7 @@ public class Pubsub extends Source {
                 }
               }
           );
-          if(publisher!=null) {
+          if (publisher != null) {
             publisher.publish(pubsubMessage);
             System.out.println("replied " + requestId + " replying to " + local2edgeDestination);
           }
