@@ -1,10 +1,7 @@
 package io.rukou.local.sources;
 
 import io.rukou.local.Message;
-import io.rukou.local.endpoints.Echo;
-import io.rukou.local.endpoints.Endpoint;
-import io.rukou.local.endpoints.Http;
-import io.rukou.local.endpoints.Jms;
+import io.rukou.local.endpoints.*;
 
 public abstract class Source {
 
@@ -26,6 +23,10 @@ public abstract class Source {
       case "jms":
         Endpoint jmsEndpoint = new Jms();
         result = jmsEndpoint.invoke(msg);
+        break;
+      case "kafka":
+        Endpoint kafkaEndpoint = new Kafka();
+        result = kafkaEndpoint.invoke(msg);
         break;
       default:
         System.err.println("endpoint cannot be determined, falling back to 'echo'");
