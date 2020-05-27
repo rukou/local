@@ -1,6 +1,8 @@
 package io.rukou.local.endpoints;
 
+import io.rukou.local.Main;
 import io.rukou.local.Message;
+import io.rukou.local.TrustedHosts;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,7 +20,7 @@ public class Http extends Endpoint {
     for (Map.Entry<String, String> entry : msg.header.entrySet()) {
       String key = entry.getKey();
       //ignore problematic header keys
-      switch (key){
+      switch (key) {
         case "HOST":
         case "CONNECTION":
         case "CONTENT-LENGTH":
@@ -28,19 +30,27 @@ public class Http extends Endpoint {
           break;
       }
     }
-    requestBuilder.uri(URI.create(endpoint))
-        .method(method, HttpRequest.BodyPublishers.ofString(msg.body));
-    HttpRequest request = requestBuilder.build();
-    HttpClient client = HttpClient.newBuilder().build();
+    URI uri = URI.create(endpoint);
     Message r = new Message();
     r.header.put("X-REQUEST-ID", msg.getRequestId());
-    try {
-      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+    if (TrustedHosts.IsTrustedHosts(uri.getHost())) {
+      requestBuilder.uri(URI.create(endpoint))
+          .method(method, HttpRequest.BodyPublishers.ofString(msg.body));
+      HttpRequest request = requestBuilder.build();
+      HttpClient client = HttpClient.newBuilder().build();
 
-      r.header.put("X-HTTP-STATUSCODE", String.valueOf(response.statusCode()));
-      r.body = response.body();
-    } catch (Exception ex) {
-      ex.printStackTrace();
+      try {
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        r.header.put("X-HTTP-STATUSCODE", String.valueOf(response.statusCode()));
+        r.body = response.body();
+      } catch (Exception ex) {
+        ex.printStackTrace();
+      }
+    } else {
+      //host is not trusted
+      r.header.put("X-HTTP-STATUSCODE", "500");
+      r.body = "Endpoint is not trusted";
     }
     System.out.println("http handler " + msg.getRequestId() + " for " + endpoint);
     return r;

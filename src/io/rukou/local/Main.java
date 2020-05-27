@@ -1,18 +1,26 @@
 package io.rukou.local;
 
+import com.google.common.collect.Lists;
 import io.rukou.local.sources.Eventhub;
 import io.rukou.local.sources.Pubsub;
 import io.rukou.local.sources.Source;
 
-import java.security.CodeSource;
-import java.security.PermissionCollection;
-import java.security.Policy;
-import java.security.Provider;
 import java.util.Map;
 
 public class Main {
-  public static void main(String[] args) throws InterruptedException {
+  public static void main(String[] args) {
     Map<String, String> env = System.getenv();
+
+    //source config
+    String hostlist = env.get("SOURCE_TRUSTEDHOSTS");
+    if (hostlist != null) {
+      String[] hosts = hostlist.split(",");
+      TrustedHosts.trustedHosts = Lists.newArrayList(hosts);
+      System.out.println("applying trusted hosts");
+      for (String s : hosts) {
+        System.out.println("trusted host: " + s);
+      }
+    }
 
     //source config
     String sourceType = env.get("SOURCE_TYPE");
@@ -35,7 +43,12 @@ public class Main {
         break;
     }
 
-    System.out.println("Rùkǒu local is running.");
-    s.startAsync();
+    if (s == null) {
+      System.out.println("Source cannot be determined.");
+      System.exit(1);
+    } else {
+      System.out.println("Rùkǒu local is running.");
+      s.startAsync();
+    }
   }
 }
