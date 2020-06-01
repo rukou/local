@@ -12,7 +12,7 @@ public abstract class Source {
     String type = msg.getEndpointType();
     Message result=null;
     switch (type) {
-      case "echo":
+      case "echo-on-local-layer":
         Echo echoEndpoint = new Echo();
         result = echoEndpoint.invoke(msg);
         break;
