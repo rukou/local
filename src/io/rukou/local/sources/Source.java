@@ -29,7 +29,7 @@ public abstract class Source {
         result = kafkaEndpoint.invoke(msg);
         break;
       default:
-        System.err.println("endpoint cannot be determined, falling back to 'echo'");
+        System.err.println("endpoint type ("+type+") cannot be processed, falling back to 'echo-on-local-layer'");
         Echo defaultEndpoint = new Echo();
         result = defaultEndpoint.invoke(msg);
         break;
